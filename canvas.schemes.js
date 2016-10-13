@@ -15,6 +15,7 @@ var Scheme = function (schemeID, listID, src, labelsJSON, params) {
         schemeImg,                  // Image of scheme
         areas = [],                 // Array of clickable areas around the labels
         selectedAreas = [],         // Array of selected areas
+        hoveredArea = {},           // Last hovered area
         config = {                  // ** Default configurations **
             padding: 30,            // padding around scheme image
             bgColor: '#fff',        // background color of scheme
@@ -57,7 +58,8 @@ var Scheme = function (schemeID, listID, src, labelsJSON, params) {
         if (typeof params === 'object') {
             setConfig(params);
         }
-        setImage(src);
+
+        setSchemeImage(src);
         setEventsListeners();
     }.call(this));
 
@@ -75,7 +77,7 @@ var Scheme = function (schemeID, listID, src, labelsJSON, params) {
      * Set Scheme image.
      * @param src
      */
-    function setImage(src) {
+    function setSchemeImage(src) {
         schemeImg = new Image();
         schemeImg.src = src;
     }
@@ -88,6 +90,7 @@ var Scheme = function (schemeID, listID, src, labelsJSON, params) {
 
         schemeImg.addEventListener('load', drawScheme);
         canvas.addEventListener('click', areaClicked);
+        canvas.addEventListener('mousemove', areaHovered);
         for (var i = 0; i < items.length; i++) {
             items[i].addEventListener('click', itemClicked);
         }
@@ -123,10 +126,41 @@ var Scheme = function (schemeID, listID, src, labelsJSON, params) {
         for (var i = 0; i < areas.length; i++) {
             var area = areas[i];
 
-            if (utility.inRange(e.offsetX, area.left, area.right) && utility.inRange(e.offsetY, area.top, area.bottom)) {
+            if (coordsInArea(e.offsetX, e.offsetY, area)) {
                 toggleHighlight(area.name);
             }
         }
+    }
+
+    /**
+     * Area hover handler.
+     * @param e
+     */
+    function areaHovered(e) {
+        if (!Object.keys(hoveredArea).length) {
+            for (var i = 0; i < areas.length; i++) {
+                var area = areas[i];
+                if (coordsInArea(e.offsetX, e.offsetY, area)) {
+                    hoveredArea = area;
+                    utility.addClass(canvas, 'pointer');
+                    break;
+                }
+            }
+        } else if (!coordsInArea(e.offsetX, e.offsetY, hoveredArea)) {
+            hoveredArea = {};
+            utility.removeClass(canvas, 'pointer');
+        }
+    }
+
+    /**
+     * Check if coordinates match an area.
+     * @param {int} x
+     * @param {int} y
+     * @param {Area} area
+     * @returns {bool}
+     */
+    function coordsInArea(x, y, area) {
+        return utility.inRange(x, area.left, area.right) && utility.inRange(y, area.top, area.bottom);
     }
 
     /**
@@ -282,7 +316,7 @@ var Scheme = function (schemeID, listID, src, labelsJSON, params) {
         ctx.strokeStyle = config.areaColor;
         ctx.stroke();
     }
-}
+};
 
 /**
  * Utility object
